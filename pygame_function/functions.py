@@ -11,7 +11,7 @@ class Images(object):
         win.blit(self.load_image, (0,0))
 
 class WordButton(object):
-    def __init__(self, y, x, text, color1, color2, textSize=30):
+    def __init__(self, y, x, text, color1, color2,  basefont, largefont, textSize=30,):
         """Sets the values for button"""
         self.color = color1 #(220, 59, 102)
         self.color2 = color2 #(169, 25, 64) 
@@ -20,8 +20,10 @@ class WordButton(object):
         self.text = text
         self.textSize = textSize
         self.largeSize = round(self.textSize * 1.25)
-        self.base_font = pygame.font.Font("Fonts/Monopoly_Regular.ttf", self.textSize)
-        self.large_font = pygame.font.Font("Fonts/Monopoly_Bold.ttf", self.largeSize)
+        self.basefont = basefont
+        self.largefont = largefont
+        self.base_font = pygame.font.Font(self.basefont, self.textSize)
+        self.large_font = pygame.font.Font(self.largefont, self.largeSize)
         self.hover = False
         self.click = False
         self.release = False
@@ -72,14 +74,14 @@ class WordButton(object):
 
 
 class Animation(object):
-    def __init__(self, win, image, scale, scale_direction, scale_min, scale_max, scale_speed, screen_y):
+    def __init__(self, image, scale, scale_direction, scale_min, scale_max, scale_speed, screen_y, screen_x):
         self.scale = scale #1.0
         self.image = image
         self.scale_direction = scale_direction #-1.35  # Start by zooming out
         self.scale_min = scale_min #0.9
         self.scale_max = scale_max #1.2
         self.scale_speed = scale_speed #0.01  # The rate at which the scale changes
-        self.screen_center_x = win.get_width() // 2
+        self.screen_center_x = screen_x
         self.screen_center_y = screen_y #324#win.get_height() // 2
         self.monopoly_rect = self.image.get_rect(center=(self.screen_center_x, self.screen_center_y))
 
@@ -104,10 +106,11 @@ class Animation(object):
         win.blit(scaled_monopoly, scaled_monopoly_rect)
 
 class TextBox(object):
-    def __init__(self, width, height, x, y, color1=(200,200,200), color2=(150,150,150)):
+    def __init__(self, width, height, x, y, color1, color2, textfont, curve, thickness, maxTextWidth):
         self.text = ''
         self.textSize = 60
-        self.base_font = pygame.font.Font("Fonts/Roboto-Regular.ttf", self.textSize)
+        self.textfont = textfont
+        self.base_font = pygame.font.Font(self.textfont, self.textSize)
         self.active = False
         self.width = width
         self.height = height
@@ -120,10 +123,12 @@ class TextBox(object):
         self.last_update = 0 # time of last update
         self.show_cursor = False # whether to show cursor or not
         self.cursor = 0
-        self.maxTextWidth = 550
+        self.maxTextWidth = maxTextWidth
+        self.curve = curve
+        self.thickness = thickness
     def draw(self, win):
         area = [self.x,self.y,self.width,self.height]
-        pygame.draw.rect(win, self.color, area, 2, 10)
+        pygame.draw.rect(win, self.color, area, self.thickness, self.curve)
         
     def checkTextBox(self):
         mouse = pygame.mouse.get_pos()
@@ -138,7 +143,7 @@ class TextBox(object):
         else:
             self.color = self.color_passive
             
-    def update(self, win, font_style="comicsans", x_pos=None, y_pos=None):
+    def update(self, win, x_pos=None, y_pos=None):
         middleOfX = win.get_width() // 2
         if x_pos is None:
             x_pos = self.x
@@ -159,6 +164,8 @@ class TextBox(object):
                     self.x = middleOfX - self.width // 2
             win.blit(surface_area, (x_pos + 5, y_pos + (self.height // 2 - surface_area.get_height() // 2)))
         else:
+            self.width = self.ogWidth
+            self.x = middleOfX - self.width // 2
             surface_area = self.base_font.render(self.text, True, (0, 0, 0))
             win.blit(surface_area, (x_pos + 5, y_pos + (self.height // 2 - surface_area.get_height() // 2)))
 
@@ -210,10 +217,11 @@ class TextBox(object):
         
 
 class Text(object):
-    def __init__(self, text, x=700, y=440, height=0):
+    def __init__(self, text, x, y, height, baseFont, textSize=32):
         self.text = text
         self.x = x
         self.y = y
+        self.baseFont = baseFont
         self.height = height
         self.textSize = 32
         self.base_font = pygame.font.Font("Fonts/Monopoly_Regular.ttf", self.textSize)
@@ -227,7 +235,7 @@ class Text(object):
 
 class Button():
     """A class for all buttons"""
-    def __init__(self, color, color2, x, y, width=None, height=None, text='',buttonType='', radius=None, textSize=30):
+    def __init__(self, color, color2, x, y, width=None, height=None, text='',buttonType='', radius=None, textSize=30, curve=20):
         """Sets the values for buttton"""
         self.color = color
         self.color2 = color2
@@ -241,6 +249,7 @@ class Button():
         self.textSize = textSize
         self.hover = False
         self.click = False
+        self.curve = curve
         self.base_font = pygame.font.SysFont("Fonts/Monopoly_Regular.ttf", self.textSize)
     def draw(self,win,outline=None,action=None,font_style="comicsans", colorChange=True):
         """Draws the button. Variable for mouse detection"""
@@ -250,10 +259,10 @@ class Button():
             """If it is a rectangle it will draw it here"""
             if outline:
                 """draws an outline"""
-                pygame.draw.rect(win, outline, (self.x-2,self.y-2,self.width+4,self.height+4),0,20)
+                pygame.draw.rect(win, outline, (self.x-2,self.y-2,self.width+4,self.height+4),0,self.curve)
             if self.x+self.width > mouse[0] > self.x and self.y+self.height > mouse[1] > self.y and colorChange:
                 """Draws a lighter version of the image"""
-                pygame.draw.rect(win, self.color2, (self.x,self.y,self.width,self.height),0,20)
+                pygame.draw.rect(win, self.color2, (self.x,self.y,self.width,self.height),0,self.curve)
                 self.hover = True
                 
                 if click[0] == 1:
